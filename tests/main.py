@@ -8,6 +8,7 @@ from xyzs_py.XCache import XCache
 
 log = XLogs('FFmpeg')
 
+
 async def main():
     # 载入配置文件
     XConfig.init("./config", os.getenv("ENV", "config"))
@@ -18,8 +19,6 @@ async def main():
                       db=XConfig.get("redis.db"),
                       expire=XConfig.get("redis.expire"),
                       prefix=XConfig.get("redis.prefix"))
-
-
 
     try:
         while True:
