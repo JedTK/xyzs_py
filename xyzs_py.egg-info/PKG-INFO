@@ -1,0 +1,14 @@
+Metadata-Version: 2.1
+Name: xyzs_py
+Version: 0.1.0
+Summary: 封装Mysql、Redis、时间操作类、yaml配置操作、Http操作、日志操作等等快速使用的代码
+Home-page: https://your-git-url/your_project
+Author: Jed
+Author-email: jiede2011@hotmail.com
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.25.1
+Requires-Dist: numpy>=1.19.0
