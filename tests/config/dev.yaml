@@ -1,0 +1,31 @@
+# 萤石云开发配置
+yssdk:
+  app_key: "e55ce3e5a2f749b691665540aec73ff2"
+  app_secret: "7c97f8a961800d10e0f6170936c11511"
+
+# Redis配置
+redis:
+  host: 127.0.0.1
+  port: 6370
+  password: XIJ4VS2ByGx0FuRb
+  db: 2
+  expire: 3600000
+  prefix:
+
+# Mysql数据库配置
+sqlalchemy:
+  database:
+    write:
+      host: "mysql+pymysql://root:Root789632145*@127.0.0.1:3306/test"
+    read:
+      host: "mysql+pymysql://root:Root789632145*@127.0.0.1:3306/test"
+  write:
+    pool:
+      size: 5
+      max_size: 10
+      recycle: 1800
+  read:
+    pool:
+      size: 5
+      max_size: 10
+      recycle: 1800

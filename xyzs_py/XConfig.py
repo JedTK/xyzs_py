@@ -73,7 +73,8 @@ class XConfig:
         返回:
         any: 检索到的值，如果未找到返回 None。
         """
-        if config is None: return None
+        if config is None:
+            return None
         keys = key_path.split('.')
         value = config
         for key in keys:
