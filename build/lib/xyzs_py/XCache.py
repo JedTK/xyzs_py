@@ -103,11 +103,11 @@ class XCache:
             return None
 
     @staticmethod
-    def get(key):
+    def get(key, default=None):
         """
         获取缓存值。
-
         :param key: 缓存键
+        :param default: 默认值
         :return: 缓存值，或None如果键不存在或发生错误
         """
         if not XCache._instance:
@@ -117,7 +117,10 @@ class XCache:
         try:
             # 添加键前缀
             key = f"{XCache._instance.prefix}{key}"
-            return XCache._instance.client.get(name=key)
+            value = XCache._instance.client.get(name=key)
+            if not value:
+                return default
+            return value
         except redis.RedisError as e:
             log.error(f"获取键 {key} 的值失败: {e}")
             return None
@@ -203,3 +206,54 @@ class XCache:
         except redis.RedisError as e:
             log.error(f"递减键 {key} 的值失败: {e}")
             return None
+
+    @staticmethod
+    def getStr(key, default=''):
+        """获取字符串类型的值"""
+        return str(XCache.get(key, default))
+
+    @staticmethod
+    def getInt(key, default=0):
+        """获取整数类型的值"""
+        try:
+            return int(XCache.get(key, default))
+        except ValueError:
+            return default
+
+    @staticmethod
+    def getFloat(key, default=0.0):
+        """获取浮点数类型的值"""
+        try:
+            return float(XCache.get(key, default))
+        except ValueError:
+            return default
+
+    @staticmethod
+    def getBool(key, default=False):
+        """获取布尔类型的值"""
+        value = XCache.get(key, default)
+        if isinstance(value, str):
+            return value.lower() in ['true', '1', 'yes']
+        return bool(value)
+
+    @staticmethod
+    def getList(key, default=None):
+        """获取列表类型的值"""
+        value = XCache.get(key, default)
+        if isinstance(value, list):
+            return value
+        try:
+            return eval(value) if isinstance(value, str) else default
+        except Exception:
+            return default
+
+    @staticmethod
+    def getDict(key, default=None):
+        """获取字典类型的值"""
+        value = XCache.get(key, default)
+        if isinstance(value, dict):
+            return value
+        try:
+            return eval(value) if isinstance(value, str) else default
+        except Exception:
+            return default

@@ -4,7 +4,7 @@ from xyzs_py.XBaseEntity import XBaseEntity, Base
 
 
 class UserEntity(Base, XBaseEntity):
-    __tablename__ = 'User'
+    # __tablename__ = 'User'
     nickname = Column(String(64), nullable=False)
 
     def __repr__(self):

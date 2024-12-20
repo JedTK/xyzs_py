@@ -1,15 +1,14 @@
 import contextlib
 
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy import create_engine, Column, Integer
-from sqlalchemy.inspection import inspect
+from sqlalchemy import create_engine
 from typing import Generator
 from contextlib import AbstractContextManager
 from xyzs_py.XConfig import XConfig
 
-# 定义基础模型类，用于所有ORM模型的继承
-Base = declarative_base()
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy import Column, Integer
+from sqlalchemy.inspection import inspect
 
 
 class XBaseEntity:
@@ -26,6 +25,23 @@ class XBaseEntity:
         :return: 包含实体所有属性及其值的字典。
         """
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+
+
+class BaseWithAutoTableName:
+    """
+    自动生成表名的基类。
+    如果类名以"Entity"结尾，将类名前缀的小写部分作为表名。
+    """
+
+    @declared_attr
+    def __tablename__(cls):
+        if cls.__name__.endswith("Entity"):
+            return cls.__name__[:-6]  # 移除"Entity"后缀并转为小写
+        return cls.__name__
+
+
+# 使用 declarative_base 创建一个新的基础类
+Base = declarative_base(cls=BaseWithAutoTableName)
 
 
 def create_session(engine_url: str

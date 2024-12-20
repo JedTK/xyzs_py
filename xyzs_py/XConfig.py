@@ -44,7 +44,7 @@ class XConfig:
             return {}
 
     @staticmethod
-    def get(key_path, default=''):
+    def get(key_path, default=None):
         """
         使用点分隔的键路径从配置中检索值，首先检查环境配置，如果未找到，则检查默认配置。
 
@@ -55,14 +55,14 @@ class XConfig:
         返回:
         any: 配置中的值或默认值。
         """
-        value = XConfig.__retrieve_value(XConfig.env_config, key_path)
+        value = XConfig.__retrieve_value(XConfig.env_config, key_path, default)
         if value is None:  # 如果环境配置中没有找到，回退到默认配置
-            value = XConfig.__retrieve_value(XConfig.default_config, key_path)
+            value = XConfig.__retrieve_value(XConfig.default_config, key_path, default)
 
         return value if value is not None else default
 
     @staticmethod
-    def __retrieve_value(config, key_path):
+    def __retrieve_value(config, key_path, default=None):
         """
         从给定配置中按照键路径检索值。
 
@@ -74,11 +74,62 @@ class XConfig:
         any: 检索到的值，如果未找到返回 None。
         """
         if config is None:
-            return None
+            return default
         keys = key_path.split('.')
         value = config
         for key in keys:
             value = value.get(key)
             if value is None:
-                return None
+                return default
         return value
+
+    @staticmethod
+    def getStr(key, default=''):
+        """获取字符串类型的值"""
+        return str(XConfig.get(key, default))
+
+    @staticmethod
+    def getInt(key, default=0):
+        """获取整数类型的值"""
+        try:
+            return int(XConfig.get(key, default))
+        except ValueError:
+            return default
+
+    @staticmethod
+    def getFloat(key, default=0.0):
+        """获取浮点数类型的值"""
+        try:
+            return float(XConfig.get(key, default))
+        except ValueError:
+            return default
+
+    @staticmethod
+    def getBool(key, default=False):
+        """获取布尔类型的值"""
+        value = XConfig.get(key, default)
+        if isinstance(value, str):
+            return value.lower() in ['true', '1', 'yes']
+        return bool(value)
+
+    @staticmethod
+    def getList(key, default=None):
+        """获取列表类型的值"""
+        value = XConfig.get(key, default)
+        if isinstance(value, list):
+            return value
+        try:
+            return eval(value) if isinstance(value, str) else default
+        except Exception:
+            return default
+
+    @staticmethod
+    def getDict(key, default=None):
+        """获取字典类型的值"""
+        value = XConfig.get(key, default)
+        if isinstance(value, dict):
+            return value
+        try:
+            return eval(value) if isinstance(value, str) else default
+        except Exception:
+            return default
