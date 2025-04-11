@@ -1,50 +1,17 @@
 import contextlib
-
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy import create_engine
-from typing import Generator
+import os
 from contextlib import AbstractContextManager
-from xyzs_py.XConfig import XConfig
+from typing import Generator
 
-from sqlalchemy.ext.declarative import declarative_base, declared_attr
-from sqlalchemy import Column, Integer
-from sqlalchemy.inspection import inspect
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
 
-
-class XBaseEntity:
-    """
-    Entity的基类，所有Entity都必须继承。
-    提供了通用的id字段和实体转字典的方法。
-    """
-    id = Column(Integer, primary_key=True)  # 主键字段
-
-    def to_dict(self):
-        """
-        将实体对象转换为字典。
-
-        :return: 包含实体所有属性及其值的字典。
-        """
-        return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
+# 全局变量，用于存储写库和读库的会话工厂
+_lazy_write_session = None  # 延迟初始化的写库会话工厂
+_lazy_read_session = None  # 延迟初始化的读库会话工厂
 
 
-class BaseWithAutoTableName:
-    """
-    自动生成表名的基类。
-    如果类名以"Entity"结尾，将类名前缀的小写部分作为表名。
-    """
-
-    @declared_attr
-    def __tablename__(cls):
-        if cls.__name__.endswith("Entity"):
-            return cls.__name__[:-6]  # 移除"Entity"后缀并转为小写
-        return cls.__name__
-
-
-# 使用 declarative_base 创建一个新的基础类
-Base = declarative_base(cls=BaseWithAutoTableName)
-
-
-def create_session(engine_url: str
+def __create_session(engine_url: str
                    , pool_size: int
                    , max_overflow: int
                    , pool_recycle: int
@@ -75,11 +42,6 @@ def create_session(engine_url: str
     return sessionmaker(bind=engine)
 
 
-# 全局变量，用于存储写库和读库的会话工厂
-_lazy_write_session = None  # 延迟初始化的写库会话工厂
-_lazy_read_session = None  # 延迟初始化的读库会话工厂
-
-
 def get_write_session_factory() -> sessionmaker:
     """
     获取写库的会话工厂，支持延迟初始化。
@@ -89,13 +51,13 @@ def get_write_session_factory() -> sessionmaker:
     global _lazy_write_session
     if _lazy_write_session is None:
         # 从配置文件中获取写库连接参数
-        host = XConfig.get("sqlalchemy.database.write.host")
-        pool_size = int(XConfig.get("sqlalchemy.write.pool.size", default=5))
-        max_size = int(XConfig.get("sqlalchemy.write.pool.max_size", default=10))
-        recycle = int(XConfig.get("sqlalchemy.write.pool.recycle", default=1800))
-        echo = bool(int(XConfig.get("sqlalchemy.database.echo", default=0)))
-        echo_pool = bool(int(XConfig.get("sqlalchemy.write.pool.echo", default=0)))
-        _lazy_write_session = create_session(host, pool_size, max_size, recycle, echo, echo_pool)
+        host = os.getenv("SQLALCHEMY.DATABASE.WRITE.HOST")
+        pool_size = int(os.getenv("SQLALCHEMY.WRITE.POOL.SIZE", default=5))
+        max_size = int(os.getenv("SQLALCHEMY.WRITE.POOL.MAX_SIZE", default=10))
+        recycle = int(os.getenv("SQLALCHEMY.WRITE.POOL.RECYCLE", default=1800))
+        echo_pool = bool(int(os.getenv("SQLALCHEMY.WRITE.POOL.ECHO", default=0)))
+        echo = bool(int(os.getenv("SQLALCHEMY.DATABASE.ECHO", default=0)))
+        _lazy_write_session = __create_session(host, pool_size, max_size, recycle, echo, echo_pool)
     return _lazy_write_session
 
 
@@ -108,13 +70,13 @@ def get_read_session_factory() -> sessionmaker:
     global _lazy_read_session
     if _lazy_read_session is None:
         # 从配置文件中获取读库连接参数
-        host = XConfig.get("sqlalchemy.database.read.host")
-        pool_size = int(XConfig.get("sqlalchemy.read.pool.size", default=5))
-        max_size = int(XConfig.get("sqlalchemy.read.pool.max_size", default=10))
-        recycle = int(XConfig.get("sqlalchemy.read.pool.recycle", default=1800))
-        echo = bool(int(XConfig.get("sqlalchemy.database.echo", default=0)))
-        echo_pool = bool(int(XConfig.get("sqlalchemy.write.pool.echo", default=0)))
-        _lazy_read_session = create_session(host, pool_size, max_size, recycle, echo, echo_pool)
+        host = os.getenv("SQLALCHEMY.DATABASE.READ.HOST")
+        pool_size = int(os.getenv("SQLALCHEMY.READ.POOL.size", default=5))
+        max_size = int(os.getenv("SQLALCHEMY.READ.POOL.max_size", default=10))
+        recycle = int(os.getenv("SQLALCHEMY.READ.POOL.recycle", default=1800))
+        echo = bool(os.getenv("SQLALCHEMY.DATABASE.ECHO", default=0))
+        echo_pool = bool(os.getenv("SQLALCHEMY.READ.POOL.echo", default=0))
+        _lazy_read_session = __create_session(host, pool_size, max_size, recycle, echo, echo_pool)
     return _lazy_read_session
 
 

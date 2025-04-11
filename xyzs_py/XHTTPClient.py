@@ -1,8 +1,9 @@
 import aiohttp
+
 from xyzs_py.XLogs import XLogs
 
 # 初始化日志系统，用于记录程序的运行状态
-log = XLogs(__name__)
+logger = XLogs(__name__)
 
 
 class RequestMethod:
@@ -18,7 +19,7 @@ class ContentType:
     定义HTTP请求中Content-Type的常见类型的枚举类。
     """
     FORM_URLENCODED = 'application/x-www-form-urlencoded'
-    MULTIPART_FORM_DATA = 'multipart/form-data'
+    MULTIPART_FORM_DATA = 'multipart/form-config'
     JSON = 'application/json'
 
 
@@ -53,11 +54,11 @@ class XHTTPClient:
                                            json=params if content_type == ContentType.JSON else None,
                                            headers=headers) as response:
                     if response.status != 200:
-                        log.warn(f"服务器响应异常：{response.status}")
+                        logger.warn(f"服务器响应异常：{response.status}")
                         return None
                     return await response.text()
         except Exception as e:
-            log.error(f"Exception {str(e)} on {url}")
+            logger.error(f"Exception {str(e)} on {url}")
             return None
 
     @staticmethod
@@ -85,11 +86,11 @@ class XHTTPClient:
                                            json=params if content_type == ContentType.JSON else None,
                                            headers=headers) as response:
                     if response.status != 200:
-                        log.warn(f"服务器响应异常：{response.status}")
+                        logger.warn(f"服务器响应异常：{response.status}")
                         return None
                     return await response.json()
         except Exception as e:
-            log.error(f"Exception {str(e)} on {url}")
+            logger.error(f"Exception {str(e)} on {url}")
             return None
 
     @staticmethod
