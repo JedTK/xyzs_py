@@ -24,7 +24,7 @@ class common:
             "msg": msg,
         }
         if data:
-            response["config"] = data
+            response["data"] = data
         return response
 
     @staticmethod
@@ -45,7 +45,7 @@ class common:
             "pages": pages
         }
         if data:
-            response["config"] = data
+            response["data"] = data
         return response
 
     @staticmethod
