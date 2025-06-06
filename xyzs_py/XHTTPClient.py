@@ -54,7 +54,7 @@ class XHTTPClient:
                                            json=params if content_type == ContentType.JSON else None,
                                            headers=headers) as response:
                     if response.status != 200:
-                        logger.warn(f"服务器响应异常：{response.status}")
+                        logger.warning(f"服务器响应异常：{response.status}")
                         return None
                     return await response.text()
         except Exception as e:
@@ -86,7 +86,7 @@ class XHTTPClient:
                                            json=params if content_type == ContentType.JSON else None,
                                            headers=headers) as response:
                     if response.status != 200:
-                        logger.warn(f"服务器响应异常：{response.status}")
+                        logger.warning(f"服务器响应异常：{response.status}")
                         return None
                     return await response.json()
         except Exception as e:
