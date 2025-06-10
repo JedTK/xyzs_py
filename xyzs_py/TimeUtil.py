@@ -20,6 +20,10 @@ class TimeUtil:
         return int(time.time() * 1000)
 
     @staticmethod
+    def now():
+        return TimeUtil.time()
+
+    @staticmethod
     def get_timedelta(days=0, hours=0, minutes=0, seconds=0, milliseconds=0, weeks=0):
         """
         返回调整后的时间戳（毫秒）。
