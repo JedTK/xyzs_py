@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy import Column, Integer
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.inspection import inspect
@@ -18,6 +20,12 @@ class XBaseEntity:
         """
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
 
+    def to_json(self):
+        """
+        将实体对象转换为JSON字符串。
+        """
+        return json.dumps(self)
+
 
 class BaseWithAutoTableName:
     """
@@ -28,7 +36,7 @@ class BaseWithAutoTableName:
     @declared_attr
     def __tablename__(self):
         if self.__name__.endswith("Entity"):
-            return self.__name__[:-6]  # 移除"Entity"后缀并转为小写
+            return self.__name__[:-6]  # 移除"Entity"
         return self.__name__
 
 
