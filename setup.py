@@ -16,7 +16,7 @@ setup(
         "colorlog~=6.8.2",
         "aiortc~=1.9.0",
         "aiohttp~=3.10.11",
-        "setuptools~=70.1.1",
+        "setuptools>=70.1.1",
         "PyYAML~=6.0.1",
         "redis~=5.0.8",
         "APScheduler~=3.10.4",
