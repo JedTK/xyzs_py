@@ -37,31 +37,29 @@ class XLogs:
         self.logger = logging.getLogger(TAG)
         # 设置日志记录器的最低处理级别为DEBUG
         self.logger.setLevel(logging.DEBUG)
+        # 关键：阻止向上冒泡到 root，避免重复
+        self.logger.propagate = False
 
-        # 如果已经存在相同类型的处理器，先移除，避免重复日志
-        for handler in self.logger.handlers[:]:
-            if isinstance(handler, logging.StreamHandler):
-                self.logger.removeHandler(handler)
-
-        # 创建控制台日志处理器
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)  # 处理器处理所有级别日志
-
-        # 配置彩色日志格式
+        # 彩色 formatter
         formatter = colorlog.ColoredFormatter(
             '%(log_color)s%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            datefmt=None,  # 使用默认时间格式: 年-月-日 时:分:秒,毫秒
-            reset=True,  # 重置颜色标记(避免颜色扩散)
-            log_colors={  # 自定义日志级别颜色配置
-                'DEBUG': 'green',  # 调试级别-绿色
-                'INFO': 'white,bold',  # 信息级别-白色加粗
-                'WARNING': 'yellow',  # 警告级别-黄色
-                'ERROR': 'red',  # 错误级别-红色
-                'CRITICAL': 'bold_red',  # 严重错误-红色加粗
+            reset=True,
+            log_colors={
+                'DEBUG': 'green',
+                'INFO': 'white,bold',
+                'WARNING': 'yellow',
+                'ERROR': 'red',
+                'CRITICAL': 'bold_red',
             }
         )
-        ch.setFormatter(formatter)
-        self.logger.addHandler(ch)
+
+        # 仅当未添加过我们自己的控制台 handler 时再添加，防止重复
+        if not any(getattr(h, "_xlogs_console", False) for h in self.logger.handlers):
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.DEBUG)
+            ch._xlogs_console = True  # 防重复标记
+            ch.setFormatter(formatter)
+            self.logger.addHandler(ch)
 
     def fatal(self, msg, *args, **kwargs):
         """记录FATAL级别日志(最高级别)。
