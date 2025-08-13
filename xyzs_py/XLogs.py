@@ -1,4 +1,5 @@
 import logging
+import sys
 
 import colorlog
 
@@ -76,13 +77,13 @@ class XLogs:
         """
         self.logger.fatal(msg, *args, **kwargs)
 
-    def error(self, msg, *args, **kwargs):
+    def error(self, msg_or_exc, *args, **kwargs):
         """记录ERROR级别日志。
 
         用于记录程序运行中的错误事件，但系统仍可继续运行。
 
         Args:
-            msg (str): 日志消息，支持printf格式
+            msg_or_exc (str): 日志消息 或者 exception对象
             *args: 格式化参数
             **kwargs: 扩展参数，如exc_info=True可记录异常堆栈
 
@@ -92,7 +93,32 @@ class XLogs:
             except Exception as e:
                  log.error("Operation failed: %s", e, exc_info=True)
         """
+        if isinstance(msg_or_exc, BaseException):
+            # 传进来的是异常对象
+            msg = f"{type(msg_or_exc).__name__}: {msg_or_exc}"
+            kwargs.setdefault('exc_info', True)
+        else:
+            msg = msg_or_exc
+            if 'exc_info' not in kwargs:
+                import sys
+                if sys.exc_info()[0] is not None:
+                    kwargs['exc_info'] = True
         self.logger.error(msg, *args, **kwargs)
+
+    def warn(self, msg, *args, **kwargs):
+        """记录WARNING级别日志。
+
+        用于记录潜在的问题或非预期情况，但程序仍可正常运行。
+
+        Args:
+            msg (str): 日志消息，支持printf格式
+            *args: 格式化参数
+            **kwargs: 扩展参数
+
+        Example:
+            log.warn("Disk space below 10%%!")
+        """
+        self.logger.warning(msg, *args, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
         """记录WARNING级别日志。
