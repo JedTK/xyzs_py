@@ -14,7 +14,6 @@ setup(
     install_requires=[
         "requests~=2.32.3",
         "colorlog~=6.8.2",
-        "aiortc~=1.9.0",
         "aiohttp~=3.10.11",
         "setuptools>=70.1.1",
         "PyYAML~=6.0.1",
