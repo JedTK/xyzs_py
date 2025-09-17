@@ -30,11 +30,11 @@ class XDBFactory:
     - 线程安全
     """
 
-    def __init__(self) -> None:
-        self._bundles: Dict[str, DBBundle] = {}
-        self._lock = RLock()
+    _bundles: Dict[str, DBBundle] = {}
+    _lock = RLock()
 
-    def register(self,
+    @classmethod
+    def register(cls,
                  key: str = "default",
                  write_connect: Optional[XDBConnect] = None,
                  read_connect: Optional[XDBConnect] = None,
@@ -51,8 +51,8 @@ class XDBFactory:
         if not any([write_connect and read_connect, write_async_connect and read_async_connect]):
             raise ValueError("register 需要同时提供同步写/读 或 异步写/读 中的至少一组。")
 
-        with self._lock:
-            bundle = self._bundles.get(key, DBBundle())
+        with cls._lock:
+            bundle = cls._bundles.get(key, DBBundle())
 
             # 同步
             if write_connect is not None or read_connect is not None:
@@ -71,50 +71,56 @@ class XDBFactory:
                 bundle.async_ = XAsyncDBManager(write_connect=write_async_connect,
                                                 read_connect=read_async_connect)
 
-            self._bundles[key] = bundle.ensure_any()
+            cls._bundles[key] = bundle.ensure_any()
 
     # —— 获取接口 —— #
-    def get_sync_db(self, key: str = "default", *, required: bool = True) -> Optional[XDBManager]:
+    @classmethod
+    def get_sync_db(cls, key: str = "default", *, required: bool = True) -> Optional[XDBManager]:
         """获取同步 DB 管理器。required=False 时若不存在返回 None。"""
-        with self._lock:
-            bundle = self._bundles.get(key)
+        with cls._lock:
+            bundle = cls._bundles.get(key)
             if not bundle or not bundle.sync:
                 if required:
-                    raise ValueError(self._not_found_msg(key, want="sync"))
+                    raise ValueError(cls._not_found_msg(key, want="sync"))
                 return None
             return bundle.sync
 
-    def get_async_db(self, key: str = "default", *, required: bool = True) -> Optional[XAsyncDBManager]:
+    @classmethod
+    def get_async_db(cls, key: str = "default", *, required: bool = True) -> Optional[XAsyncDBManager]:
         """获取异步 DB 管理器（注意：这不是 async 函数）。"""
-        with self._lock:
-            bundle = self._bundles.get(key)
+        with cls._lock:
+            bundle = cls._bundles.get(key)
             if not bundle or not bundle.async_:
                 if required:
-                    raise ValueError(self._not_found_msg(key, want="async"))
+                    raise ValueError(cls._not_found_msg(key, want="async"))
                 return None
             return bundle.async_
 
     # —— 维护/工具接口 —— #
-    def has_key(self, key: str) -> bool:
-        with self._lock:
-            return key in self._bundles
+    @classmethod
+    def has_key(cls, key: str) -> bool:
+        with cls._lock:
+            return key in cls._bundles
 
-    def list_keys(self) -> Iterable[str]:
-        with self._lock:
-            return tuple(self._bundles.keys())
+    @classmethod
+    def list_keys(cls) -> Iterable[str]:
+        with cls._lock:
+            return tuple(cls._bundles.keys())
 
-    def unregister(self, key: str) -> None:
-        with self._lock:
-            if key in self._bundles:
-                self._bundles.pop(key, None)
+    @classmethod
+    def unregister(cls, key: str) -> None:
+        with cls._lock:
+            if key in cls._bundles:
+                cls._bundles.pop(key, None)
 
-    def close_all(self) -> None:
+    @classmethod
+    def close_all(cls) -> None:
         """
         关闭所有连接（若管理器提供 close/cleanup 等接口，可以在此统一释放资源）。
         这里假设 XDBManager / XAsyncDBManager 暴露了 close()；若没有，可按你们类库实际情况修改。
         """
-        with self._lock:
-            for b in self._bundles.values():
+        with cls._lock:
+            for b in cls._bundles.values():
                 if getattr(b.sync, "close", None):
                     try:
                         b.sync.close()  # type: ignore[attr-defined]
@@ -125,9 +131,10 @@ class XDBFactory:
                         b.async_.close()  # type: ignore[attr-defined]
                     except Exception:
                         pass
-            self._bundles.clear()
+            cls._bundles.clear()
 
     # —— 内部 —— #
-    def _not_found_msg(self, key: str, want: str) -> str:
-        keys = ", ".join(self._bundles.keys()) or "<无>"
+    @classmethod
+    def _not_found_msg(cls, key: str, want: str) -> str:
+        keys = ", ".join(cls._bundles.keys()) or "<无>"
         return f"[XDBFactory] 未找到 {want} 数据库连接: '{key}'。可用 keys = {keys}"
