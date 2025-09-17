@@ -11,12 +11,12 @@ _lazy_write_session = None  # 延迟初始化的写库会话工厂
 _lazy_read_session = None  # 延迟初始化的读库会话工厂
 
 
-def __create_session(engine_url: str
-                   , pool_size: int
-                   , max_overflow: int
-                   , pool_recycle: int
-                   , echo: False,
-                   echo_pool: False) -> sessionmaker:
+def __create_session(engine_url: str,
+                     pool_size: int,
+                     max_overflow: int,
+                     pool_recycle: int,
+                     echo: bool = False,
+                     echo_pool: bool = False) -> sessionmaker:
     """
     创建SQLAlchemy会话工厂。
 
