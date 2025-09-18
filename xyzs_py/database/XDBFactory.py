@@ -36,6 +36,8 @@ class XDBFactory:
     __register_main_db_Listener = None
     __register_slave_DB_Listener = None
 
+    __MAIN_DB_KEY = "main"
+
     @classmethod
     def register_main_db(cls, register_main_db_Listener):
         """
@@ -56,7 +58,7 @@ class XDBFactory:
 
     @classmethod
     def register(cls,
-                 key: str = "main",
+                 key: str = __MAIN_DB_KEY,
                  write_connect: Optional[XDBConnect] = None,
                  read_connect: Optional[XDBConnect] = None,
                  write_async_connect: Optional[XAsyncDBConnect] = None,
@@ -96,19 +98,19 @@ class XDBFactory:
     # region remark - 获取同步 DB 管理器
 
     @classmethod
-    def get_sync_db(cls, key: str = "main", *, required: bool = True) -> Optional[XDBManager]:
+    def get_sync_db(cls, db_name: str = __MAIN_DB_KEY, *, required: bool = True) -> Optional[XDBManager]:
         """获取同步 DB 管理器。required=False 时若不存在返回 None。"""
         with cls._lock:
-            if key not in cls._bundles:
-                if key == "main" and cls.__register_main_db_Listener:
-                    cls.__register_main_db_Listener(key)  # 触发监听器注册，用户自行实现注册逻辑，最终会调用 register() 方法进行注册
+            if db_name not in cls._bundles:
+                if db_name == cls.__MAIN_DB_KEY and cls.__register_main_db_Listener:
+                    cls.__register_main_db_Listener(db_name)  # 触发监听器注册，用户自行实现注册逻辑，最终会调用 register() 方法进行注册
                 elif cls.__register_slave_DB_Listener:
-                    cls.__register_slave_DB_Listener(key)
+                    cls.__register_slave_DB_Listener(db_name)
 
-            bundle = cls._bundles.get(key)
+            bundle = cls._bundles.get(db_name)
             if not bundle or not bundle.sync:
                 if required:
-                    raise ValueError(cls._not_found_msg(key, want="sync"))
+                    raise ValueError(cls._not_found_msg(db_name, want="sync"))
                 return None
             return bundle.sync
 
@@ -116,19 +118,19 @@ class XDBFactory:
 
     #  region remark - 获取异步 DB 管理器
     @classmethod
-    def get_async_db(cls, key: str = "main", *, required: bool = True) -> Optional[XAsyncDBManager]:
+    def get_async_db(cls, db_name: str = __MAIN_DB_KEY, *, required: bool = True) -> Optional[XAsyncDBManager]:
         """获取异步 DB 管理器（注意：这不是 async 函数）。"""
         with cls._lock:
-            if key not in cls._bundles:
-                if key == "main" and cls.__register_main_db_Listener:
-                    cls.__register_main_db_Listener(key)  # 触发监听器注册，用户自行实现注册逻辑，最终会调用 register() 方法进行注册
+            if db_name not in cls._bundles:
+                if db_name == cls.__MAIN_DB_KEY and cls.__register_main_db_Listener:
+                    cls.__register_main_db_Listener(db_name)  # 触发监听器注册，用户自行实现注册逻辑，最终会调用 register() 方法进行注册
                 elif cls.__register_slave_DB_Listener:
-                    cls.__register_slave_DB_Listener(key)
+                    cls.__register_slave_DB_Listener(db_name)
 
-            bundle = cls._bundles.get(key)
+            bundle = cls._bundles.get(db_name)
             if not bundle or not bundle.async_:
                 if required:
-                    raise ValueError(cls._not_found_msg(key, want="async"))
+                    raise ValueError(cls._not_found_msg(db_name, want="async"))
                 return None
             return bundle.async_
 
