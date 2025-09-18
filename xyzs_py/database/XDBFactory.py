@@ -58,7 +58,7 @@ class XDBFactory:
 
     @classmethod
     def register(cls,
-                 key: str = __MAIN_DB_KEY,
+                 db_name: str = __MAIN_DB_KEY,
                  write_connect: Optional[XDBConnect] = None,
                  read_connect: Optional[XDBConnect] = None,
                  write_async_connect: Optional[XAsyncDBConnect] = None,
@@ -75,7 +75,7 @@ class XDBFactory:
             raise ValueError("register 需要同时提供同步写/读 或 异步写/读 中的至少一组。")
 
         with cls._lock:
-            bundle = cls._bundles.get(key, DBBundle())
+            bundle = cls._bundles.get(db_name, DBBundle())
 
             # 同步
             if write_connect is not None or read_connect is not None:
@@ -93,7 +93,7 @@ class XDBFactory:
                     return
                 bundle.async_ = XAsyncDBManager(write_connect=write_async_connect,
                                                 read_connect=read_async_connect)
-            cls._bundles[key] = bundle.ensure_any()
+            cls._bundles[db_name] = bundle.ensure_any()
 
     # region remark - 获取同步 DB 管理器
 
