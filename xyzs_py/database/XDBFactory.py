@@ -87,7 +87,7 @@ class XDBFactory:
                     listener = cls.__register_slave_DB_Listener
 
         if listener is not None:
-            cls._invoke_listener_sync(listener, db_name)
+            XDBFactory._invoke_listener_sync(listener, db_name)
 
         with cls._lock:
             bundle = cls._bundles.get(db_name)

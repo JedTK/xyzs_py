@@ -84,7 +84,7 @@ class XAsyncDBFactory:
 
         # 锁外：执行监听器（可能是 async），避免在持锁期间 await
         if listener is not None:
-            await cls._invoke_listener_async(listener, db_name)
+            await XAsyncDBFactory._invoke_listener_async(listener, db_name)
 
         # 第二次持锁：读取结果
         with cls._lock:
