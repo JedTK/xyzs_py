@@ -1,5 +1,7 @@
-from xyzs_py import XLogs
+from xyzs_py.XLogs import XLogs
 from xyzs_py.database.XDBConnect import XDBConnect
+
+log = XLogs(__name__)
 
 
 class XDBManager:
@@ -40,8 +42,6 @@ class XDBManager:
          print("用户总数:", rows["c"])
     """
 
-    __log = XLogs(__name__)
-
     def __init__(self, write_connect: XDBConnect = None, read_connect: XDBConnect = None):
         """
         :param write_connect: 写库连接包装（XDBConnect 实例，通常指主库）
@@ -55,14 +55,14 @@ class XDBManager:
     def get_write_session(self):
         """获取写库 ORM 会话（带事务自动提交/回滚/关闭）"""
         if self.write_connect is None:
-            self.__log.error("写数据库连接未初始化")
+            log.error("写数据库连接未初始化")
             return None
         return self.write_connect.get_session()
 
     def get_read_session(self):
         """获取读库 ORM 会话（带事务自动提交/回滚/关闭）"""
         if self.read_connect is None:
-            self.__log.error("读数据库连接未初始化")
+            log.error("读数据库连接未初始化")
             return None
         return self.read_connect.get_session()
 
@@ -71,13 +71,13 @@ class XDBManager:
     def get_write_connect(self):
         """获取写库 Core 连接（需显式控制事务，推荐 with conn.begin() 使用）"""
         if self.write_connect is None:
-            self.__log.error("写数据库连接未初始化")
+            log.error("写数据库连接未初始化")
             return None
         return self.write_connect.get_connect()
 
     def get_read_connect(self):
         """获取读库 Core 连接（需显式控制事务，推荐 with conn.begin() 使用）"""
         if self.read_connect is None:
-            self.__log.error("读数据库连接未初始化")
+            log.error("读数据库连接未初始化")
             return None
         return self.read_connect.get_connect()

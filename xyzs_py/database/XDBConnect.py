@@ -1,10 +1,12 @@
 from contextlib import contextmanager
 from typing import Optional, Generator
 
-from sqlalchemy import create_engine, Engine, Connection, text
+from sqlalchemy import create_engine, Engine, Connection
 from sqlalchemy.orm import sessionmaker, Session
 
-from xyzs_py import XLogs
+from xyzs_py.XLogs import XLogs
+
+log = XLogs(__name__)
 
 
 class XDBConnect:
@@ -52,8 +54,6 @@ class XDBConnect:
             rows = conn.execute(text("SELECT COUNT(*) AS c FROM users WHERE status=:st"), {"st": 1}).mappings().one()
             print("count=", rows["c"])
     """
-
-    __log = XLogs(__name__)
 
     def __init__(self,
                  host: str,
@@ -109,7 +109,7 @@ class XDBConnect:
             return self._engine
         except Exception as e:
             # 这里捕获创建引擎异常（如 DSN 错误、驱动缺失等）
-            self.__log.error(f"数据库连接失败: {e}")
+            log.error(f"数据库连接失败: {e}")
             # 继续抛出更利于上层熔断/报警；也可以选择返回 None 自行判空
             raise
 
@@ -127,7 +127,7 @@ class XDBConnect:
                                                     future=True)
             return self._SessionFactory()
         except  Exception as e:
-            self.__log.error(f"数据库会话工厂创建失败: {e}")
+            log.error(f"数据库会话工厂创建失败: {e}")
             raise
 
     @contextmanager
@@ -153,7 +153,7 @@ class XDBConnect:
         try:
             yield session
             session.commit()
-        except Exception as e:
+        except Exception:
             session.rollback()
             raise
         finally:

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncConnection,
 )
 
-from xyzs_py import XLogs
+from xyzs_py.XLogs import XLogs
 
 log = XLogs(__name__)
 

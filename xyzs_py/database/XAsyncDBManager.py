@@ -1,8 +1,7 @@
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional, Any
+from typing import Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncConnection
-from xyzs_py import XLogs
+from xyzs_py.XLogs import XLogs
 from xyzs_py.database.XAsyncDBConnect import XAsyncDBConnect
 
 log = XLogs(__name__)
