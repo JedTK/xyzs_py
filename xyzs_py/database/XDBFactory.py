@@ -71,7 +71,7 @@ class XDBFactory:
                 asyncio.run(ret)
 
     @classmethod
-    def get_db(cls, db_name: str = __MAIN_DB_KEY, *, required: bool = True) -> Optional[XDBManager]:
+    def get_db(cls, db_name: str = __MAIN_DB_KEY, *, required: bool = True) -> XDBManager:
         """
         获取同步 DB 管理器（sync）。
         不存在时：若配置了监听器，将在锁外触发监听器进行延迟注册。

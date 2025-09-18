@@ -44,8 +44,7 @@ class XAsyncDBManager:
          print("用户总数:", row["c"])
     """
 
-    def __init__(self, write_connect: Optional[XAsyncDBConnect] = None,
-                 read_connect: Optional[XAsyncDBConnect] = None):
+    def __init__(self, write_connect: XAsyncDBConnect = None, read_connect: XAsyncDBConnect = None):
         self.write_connect = write_connect
         self.read_connect = read_connect
 

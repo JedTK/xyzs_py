@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from typing import Optional, AsyncGenerator
+from typing import Optional, AsyncGenerator, Any
 
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
@@ -139,7 +139,7 @@ class XAsyncDBConnect:
             await session.close()
 
     @asynccontextmanager
-    async def get_connect(self) -> AsyncGenerator[AsyncConnection, None]:
+    async def get_connect(self) -> AsyncGenerator[AsyncConnection, Any]:
         """
         【Core 连接上下文管理器】（适合原生 SQL / 表达式、报表/聚合/批处理）
 

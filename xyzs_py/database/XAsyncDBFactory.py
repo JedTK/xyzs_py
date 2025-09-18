@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import inspect
 from threading import RLock
 from typing import Callable, Dict, Optional
@@ -23,20 +22,20 @@ class XAsyncDBFactory:
     _bundles: Dict[str, XAsyncDBManager] = {}
     _lock = RLock()
 
-    __register_main_db_Listener: Optional[Callable[[str], object]] = None
-    __register_slave_DB_Listener: Optional[Callable[[str], object]] = None
+    __register_main_db_Listener: Callable[[str], None] = None
+    __register_slave_DB_Listener: Callable[[str], None] = None
 
     __MAIN_DB_KEY = "main"
 
     # —— 监听器注入（同步方法即可；监听器本身可同步也可异步） —— #
     @classmethod
-    def register_main_db(cls, register_main_db_Listener: Callable[[str], object]):
+    def register_main_db(cls, register_main_db_Listener: Callable[[str], None]):
         """注入主库注册监听器（监听器可为 sync 或 async 函数）"""
         log.info("注入主库注册监听器: %r", register_main_db_Listener)
         cls.__register_main_db_Listener = register_main_db_Listener
 
     @classmethod
-    def register_slave_db(cls, register_slave_DB_Listener: Callable[[str], object]):
+    def register_slave_db(cls, register_slave_DB_Listener: Callable[[str], None]):
         """注入从库注册监听器（监听器可为 sync 或 async 函数）"""
         log.info("注入从库注册监听器: %r", register_slave_DB_Listener)
         cls.__register_slave_DB_Listener = register_slave_DB_Listener
@@ -44,8 +43,8 @@ class XAsyncDBFactory:
     @classmethod
     def register(cls,
                  db_name: str = __MAIN_DB_KEY,
-                 write_connect: Optional[XAsyncDBConnect] = None,
-                 read_connect: Optional[XAsyncDBConnect] = None) -> None:
+                 write_connect: XAsyncDBConnect = None,
+                 read_connect: XAsyncDBConnect = None) -> None:
         """
         注册异步数据库连接。
         overwrite=True：已存在则覆盖；False：已存在则直接返回不覆盖。
@@ -60,7 +59,7 @@ class XAsyncDBFactory:
 
     # 内部工具：在异步上下文里安全执行监听器（支持 sync/async）
     @staticmethod
-    async def _invoke_listener_async(listener: Callable[[str], object], db_name: str) -> None:
+    async def _invoke_listener_async(listener: Callable[[str], None], db_name: str) -> None:
         ret = listener(db_name)
         if inspect.iscoroutine(ret):
             # 如果是异步协程，必须 await 或 asyncio.run(ret) 来执行
@@ -68,7 +67,7 @@ class XAsyncDBFactory:
         # 如果是普通函数，已经执行完成了，不用管
 
     @classmethod
-    async def get_db(cls, db_name: str = __MAIN_DB_KEY, *, required: bool = True) -> Optional[XAsyncDBManager]:
+    async def get_db(cls, db_name: str = __MAIN_DB_KEY, *, required: bool = True) -> XAsyncDBManager:
         """
         获取异步 DB 管理器（async）。
         不存在时：若配置了监听器，将在锁外触发监听器进行延迟注册（await 安全）。
