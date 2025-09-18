@@ -73,46 +73,51 @@ class XDBFactory:
         """
         if not any([write_connect and read_connect, write_async_connect and read_async_connect]):
             raise ValueError("register 需要同时提供同步写/读 或 异步写/读 中的至少一组。")
+        try:
+            with cls._lock:
+                bundle = cls._bundles.get(db_name, DBBundle())
 
-        with cls._lock:
-            bundle = cls._bundles.get(db_name, DBBundle())
+                # 同步
+                if write_connect is not None or read_connect is not None:
+                    if not (write_connect and read_connect):
+                        raise ValueError("同步注册需要同时提供 write_connect 和 read_connect。")
+                    if bundle.sync is not None and not overwrite:
+                        return
+                    bundle.sync = XDBManager(write_connect=write_connect, read_connect=read_connect)
 
-            # 同步
-            if write_connect is not None or read_connect is not None:
-                if not (write_connect and read_connect):
-                    raise ValueError("同步注册需要同时提供 write_connect 和 read_connect。")
-                if bundle.sync is not None and not overwrite:
-                    return
-                bundle.sync = XDBManager(write_connect=write_connect, read_connect=read_connect)
-
-            # 异步
-            if write_async_connect is not None or read_async_connect is not None:
-                if not (write_async_connect and read_async_connect):
-                    raise ValueError("异步注册需要同时提供 write_async_connect 和 read_async_connect。")
-                if bundle.async_ is not None and not overwrite:
-                    return
-                bundle.async_ = XAsyncDBManager(write_connect=write_async_connect,
-                                                read_connect=read_async_connect)
-            cls._bundles[db_name] = bundle.ensure_any()
+                # 异步
+                if write_async_connect is not None or read_async_connect is not None:
+                    if not (write_async_connect and read_async_connect):
+                        raise ValueError("异步注册需要同时提供 write_async_connect 和 read_async_connect。")
+                    if bundle.async_ is not None and not overwrite:
+                        return
+                    bundle.async_ = XAsyncDBManager(write_connect=write_async_connect,
+                                                    read_connect=read_async_connect)
+                cls._bundles[db_name] = bundle.ensure_any()
+        except Exception as e:
+            raise e
 
     # region remark - 获取同步 DB 管理器
 
     @classmethod
     def get_sync_db(cls, db_name: str = __MAIN_DB_KEY, *, required: bool = True) -> Optional[XDBManager]:
         """获取同步 DB 管理器。required=False 时若不存在返回 None。"""
-        with cls._lock:
-            if db_name not in cls._bundles:
-                if db_name == cls.__MAIN_DB_KEY and cls.__register_main_db_Listener:
-                    cls.__register_main_db_Listener(db_name)  # 触发监听器注册，用户自行实现注册逻辑，最终会调用 register() 方法进行注册
-                elif cls.__register_slave_DB_Listener:
-                    cls.__register_slave_DB_Listener(db_name)
+        try:
+            with cls._lock:
+                if db_name not in cls._bundles:
+                    if db_name == cls.__MAIN_DB_KEY and cls.__register_main_db_Listener:
+                        cls.__register_main_db_Listener(db_name)  # 触发监听器注册，用户自行实现注册逻辑，最终会调用 register() 方法进行注册
+                    elif cls.__register_slave_DB_Listener:
+                        cls.__register_slave_DB_Listener(db_name)
 
-            bundle = cls._bundles.get(db_name)
-            if not bundle or not bundle.sync:
-                if required:
-                    raise ValueError(cls._not_found_msg(db_name, want="sync"))
-                return None
-            return bundle.sync
+                bundle = cls._bundles.get(db_name)
+                if not bundle or not bundle.sync:
+                    if required:
+                        raise ValueError(cls._not_found_msg(db_name, want="sync"))
+                    return None
+                return bundle.sync
+        except Exception as e:
+            raise e
 
     #  endregion
 
@@ -120,19 +125,22 @@ class XDBFactory:
     @classmethod
     def get_async_db(cls, db_name: str = __MAIN_DB_KEY, *, required: bool = True) -> Optional[XAsyncDBManager]:
         """获取异步 DB 管理器（注意：这不是 async 函数）。"""
-        with cls._lock:
-            if db_name not in cls._bundles:
-                if db_name == cls.__MAIN_DB_KEY and cls.__register_main_db_Listener:
-                    cls.__register_main_db_Listener(db_name)  # 触发监听器注册，用户自行实现注册逻辑，最终会调用 register() 方法进行注册
-                elif cls.__register_slave_DB_Listener:
-                    cls.__register_slave_DB_Listener(db_name)
+        try:
+            with cls._lock:
+                if db_name not in cls._bundles:
+                    if db_name == cls.__MAIN_DB_KEY and cls.__register_main_db_Listener:
+                        cls.__register_main_db_Listener(db_name)  # 触发监听器注册，用户自行实现注册逻辑，最终会调用 register() 方法进行注册
+                    elif cls.__register_slave_DB_Listener:
+                        cls.__register_slave_DB_Listener(db_name)
 
-            bundle = cls._bundles.get(db_name)
-            if not bundle or not bundle.async_:
-                if required:
-                    raise ValueError(cls._not_found_msg(db_name, want="async"))
-                return None
-            return bundle.async_
+                bundle = cls._bundles.get(db_name)
+                if not bundle or not bundle.async_:
+                    if required:
+                        raise ValueError(cls._not_found_msg(db_name, want="async"))
+                    return None
+                return bundle.async_
+        except  Exception as e:
+            raise e
 
     # endregion
 

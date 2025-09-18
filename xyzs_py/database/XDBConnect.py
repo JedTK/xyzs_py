@@ -6,8 +6,6 @@ from sqlalchemy.orm import sessionmaker, Session
 
 from xyzs_py import XLogs
 
-log = XLogs(__name__)
-
 
 class XDBConnect:
     """
@@ -54,6 +52,8 @@ class XDBConnect:
             rows = conn.execute(text("SELECT COUNT(*) AS c FROM users WHERE status=:st"), {"st": 1}).mappings().one()
             print("count=", rows["c"])
     """
+
+    __log = XLogs(__name__)
 
     def __init__(self,
                  host: str,
@@ -109,22 +109,26 @@ class XDBConnect:
             return self._engine
         except Exception as e:
             # 这里捕获创建引擎异常（如 DSN 错误、驱动缺失等）
-            log.error(f"数据库连接失败: {e}")
+            self.__log.error(f"数据库连接失败: {e}")
             # 继续抛出更利于上层熔断/报警；也可以选择返回 None 自行判空
             raise
 
-    def __create_session(self) -> Session:
+    def __create_session(self) -> Session | None:
         """
         创建或返回一个 ORM Session 实例（通过 sessionmaker 工厂创建）。
         说明：
         - Session 是“工作单元（Unit of Work）”，承载 ORM 对象的持久化状态与事务；
         - 不可跨线程复用；每次 `with get_session()` 都会新建一个全新的 Session。
         """
-        if self._SessionFactory is None:
-            self._SessionFactory = sessionmaker(bind=self.__create_engine(),
-                                                expire_on_commit=self._expire_on_commit,
-                                                future=True)
-        return self._SessionFactory()
+        try:
+            if self._SessionFactory is None:
+                self._SessionFactory = sessionmaker(bind=self.__create_engine(),
+                                                    expire_on_commit=self._expire_on_commit,
+                                                    future=True)
+            return self._SessionFactory()
+        except  Exception as e:
+            self.__log.error(f"数据库会话工厂创建失败: {e}")
+            raise
 
     @contextmanager
     def get_session(self) -> Generator[Session, None, None]:
