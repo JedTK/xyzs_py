@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from threading import RLock
-from typing import Dict, Optional, Iterable, Callable
+from typing import Dict, Optional, Iterable
 
+from xyzs_py.XLogs import XLogs
 from xyzs_py.database import XDBConnect
 from xyzs_py.database.XAsyncDBConnect import XAsyncDBConnect
 from xyzs_py.database.XAsyncDBManager import XAsyncDBManager
 from xyzs_py.database.XDBManager import XDBManager
+
+log = XLogs(__name__)
 
 
 @dataclass
@@ -45,6 +48,7 @@ class XDBFactory:
         通常在应用启动时注入但不激活，待实际需要数据库连接时才触发注册。
         :param register_main_db_Listener: 主库监听器
         """
+        log.info(f"注入主库注册监听器")
         cls.__register_main_db_Listener = register_main_db_Listener
 
     @classmethod
@@ -54,6 +58,7 @@ class XDBFactory:
         通常在应用启动时注入但不激活，待实际需要数据库连接时才触发注册。
         :param register_slave_DB_Listener: 从库监听器
         """
+        log.info(f"注入从库注册监听器")
         cls.__register_slave_DB_Listener = register_slave_DB_Listener
 
     @classmethod
@@ -73,6 +78,9 @@ class XDBFactory:
         """
         if not any([write_connect and read_connect, write_async_connect and read_async_connect]):
             raise ValueError("register 需要同时提供同步写/读 或 异步写/读 中的至少一组。")
+
+        log.info(f"注册数据库: {db_name}")
+
         try:
             with cls._lock:
                 bundle = cls._bundles.get(db_name, DBBundle())
