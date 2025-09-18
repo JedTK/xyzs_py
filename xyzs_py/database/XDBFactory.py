@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 from threading import RLock
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Optional, Any
 
 from xyzs_py.XLogs import XLogs
 from xyzs_py.database import XDBConnect
@@ -23,26 +23,26 @@ class XDBFactory:
     _bundles: Dict[str, XDBManager] = {}
     _lock = RLock()
 
-    __register_main_db_Listener: Optional[Callable[[str], object]] = None
-    __register_slave_DB_Listener: Optional[Callable[[str], object]] = None
+    __register_main_db_Listener: Callable[[str], Any] = None
+    __register_slave_DB_Listener: Callable[[str], Any] = None
 
     __MAIN_DB_KEY = "main"
 
     @classmethod
-    def register_main_db(cls, register_main_db_Listener: Callable[[str], object]):
+    def register_main_db(cls, register_main_db_Listener: Callable[[str], Any]):
         log.info("注入主库注册监听器: %r", register_main_db_Listener)
         cls.__register_main_db_Listener = register_main_db_Listener
 
     @classmethod
-    def register_slave_db(cls, register_slave_DB_Listener: Callable[[str], object]):
+    def register_slave_db(cls, register_slave_DB_Listener: Callable[[str], Any]):
         log.info("注入从库注册监听器: %r", register_slave_DB_Listener)
         cls.__register_slave_DB_Listener = register_slave_DB_Listener
 
     @classmethod
     def register(cls,
                  db_name: str = __MAIN_DB_KEY,
-                 write_connect: Optional[XDBConnect] = None,
-                 read_connect: Optional[XDBConnect] = None) -> None:
+                 write_connect: XDBConnect = None,
+                 read_connect: XDBConnect = None) -> None:
         """
         注册同步数据库连接。
         overwrite=True：已存在则覆盖；False：已存在则直接返回不覆盖。
@@ -57,7 +57,7 @@ class XDBFactory:
 
     # 内部工具：在“同步上下文”中执行监听器（支持 sync/async）
     @staticmethod
-    def _invoke_listener_sync(listener: Callable[[str], object], db_name: str) -> None:
+    def _invoke_listener_sync(listener: Callable[[str], Any], db_name: str) -> None:
         ret = listener(db_name)
         if inspect.iscoroutine(ret):
             # 同步上下文中执行异步监听器：仅在没有事件循环时允许

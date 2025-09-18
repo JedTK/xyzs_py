@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from threading import RLock
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Any
 
 from xyzs_py.XLogs import XLogs
 from xyzs_py.database import XAsyncDBConnect
@@ -22,20 +22,20 @@ class XAsyncDBFactory:
     _bundles: Dict[str, XAsyncDBManager] = {}
     _lock = RLock()
 
-    __register_main_db_Listener: Callable[[str], None] = None
-    __register_slave_DB_Listener: Callable[[str], None] = None
+    __register_main_db_Listener: Callable[[str], Any] = None
+    __register_slave_DB_Listener: Callable[[str], Any] = None
 
     __MAIN_DB_KEY = "main"
 
     # —— 监听器注入（同步方法即可；监听器本身可同步也可异步） —— #
     @classmethod
-    def register_main_db(cls, register_main_db_Listener: Callable[[str], None]):
+    def register_main_db(cls, register_main_db_Listener: Callable[[str], Any]):
         """注入主库注册监听器（监听器可为 sync 或 async 函数）"""
         log.info("注入主库注册监听器: %r", register_main_db_Listener)
         cls.__register_main_db_Listener = register_main_db_Listener
 
     @classmethod
-    def register_slave_db(cls, register_slave_DB_Listener: Callable[[str], None]):
+    def register_slave_db(cls, register_slave_DB_Listener: Callable[[str], Any]):
         """注入从库注册监听器（监听器可为 sync 或 async 函数）"""
         log.info("注入从库注册监听器: %r", register_slave_DB_Listener)
         cls.__register_slave_DB_Listener = register_slave_DB_Listener
@@ -59,7 +59,7 @@ class XAsyncDBFactory:
 
     # 内部工具：在异步上下文里安全执行监听器（支持 sync/async）
     @staticmethod
-    async def _invoke_listener_async(listener: Callable[[str], None], db_name: str) -> None:
+    async def _invoke_listener_async(listener: Callable[[str], Any], db_name: str) -> None:
         ret = listener(db_name)
         if inspect.iscoroutine(ret):
             # 如果是异步协程，必须 await 或 asyncio.run(ret) 来执行
