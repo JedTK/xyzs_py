@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 from threading import RLock
-from typing import Callable, Dict, Optional, Any
+from typing import Callable, Dict, Any
 
 from xyzs_py.XLogs import XLogs
 from xyzs_py.database import XDBConnect
