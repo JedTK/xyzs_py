@@ -78,6 +78,9 @@ class XDBFactory:
         若监听器为 async 且检测到当前线程已有事件循环在跑，会明确抛错引导使用异步获取方式。
         """
         with cls._lock:
+            if not db_name and db_name == "":
+                db_name = cls.__MAIN_DB_KEY
+                
             need_register = db_name not in cls._bundles
             listener = None
             if need_register:

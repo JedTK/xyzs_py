@@ -74,6 +74,9 @@ class XAsyncDBFactory:
         """
         # 第一次持锁：判断是否需要触发监听器，并取到监听器引用
         with cls._lock:
+            if not db_name and db_name == "":
+                db_name = cls.__MAIN_DB_KEY
+
             need_register = db_name not in cls._bundles
             listener = None
             if need_register:
