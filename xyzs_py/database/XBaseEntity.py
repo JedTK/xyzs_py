@@ -1,44 +1,50 @@
 import json
-
 from sqlalchemy import Column, Integer
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.inspection import inspect
 
 
+def target_db(db_name: str):
+    """类装饰器：给实体类绑定数据库 key"""
+
+    def decorator(cls):
+        cls.__bind_key__ = db_name
+        return cls
+
+    return decorator
+
+
 class XBaseEntity:
-    """
-    Entity的基类，所有Entity都必须继承。
-    提供了通用的id字段和实体转字典的方法。
-    """
-    id = Column(Integer, primary_key=True)  # 主键字段
+    """所有实体类的基础功能"""
+    id = Column(Integer, primary_key=True)
 
-    def to_dict(self):
-        """
-        将实体对象转换为字典。
+    @classmethod
+    def get_db_name(cls) -> str:
+        """获取类绑定的数据库名，默认为 main"""
+        return getattr(cls, "__bind_key__", "main")
 
-        :return: 包含实体所有属性及其值的字典。
-        """
+    def to_dict(self) -> dict:
+        """转为字典"""
         return {c.key: getattr(self, c.key) for c in inspect(self).mapper.column_attrs}
 
-    def to_json(self):
-        """
-        将实体对象转换为JSON字符串。
-        """
-        return json.dumps(self)
+    def to_json(self) -> str:
+        """转为 JSON 字符串"""
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+
+    def __repr__(self):
+        cls_name = self.__class__.__name__
+        return f"<{cls_name} id={self.id}>"
 
 
 class BaseWithAutoTableName:
-    """
-    自动生成表名的基类。
-    如果类名以"Entity"结尾，将类名前缀的小写部分作为表名。
-    """
+    """自动生成表名的基类，不做大小写/下划线转换"""
 
     @declared_attr
-    def __tablename__(self):
-        if self.__name__.endswith("Entity"):
-            return self.__name__[:-6]  # 移除"Entity"
-        return self.__name__
+    def __tablename__(cls):
+        if cls.__name__.endswith("Entity"):
+            return cls.__name__[:-6]  # 去掉 Entity 后缀
+        return cls.__name__
 
 
-# 使用 declarative_base 创建一个新的基础类
-Base = declarative_base(cls=BaseWithAutoTableName)
+# 组合成全局 Base
+Base = declarative_base(cls=type("BaseModel", (BaseWithAutoTableName, XBaseEntity), {}))

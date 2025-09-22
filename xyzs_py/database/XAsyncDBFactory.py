@@ -52,7 +52,7 @@ class XAsyncDBFactory:
         if write_connect is None or read_connect is None:
             raise ValueError("register 需要同时提供异步写/读数据库连接器。")
 
-        log.info("注册异步数据库: %s", db_name)
+        log.info(f"注册异步数据库: db={db_name}")
         with cls._lock:
             db_manager = XAsyncDBManager(write_connect=write_connect, read_connect=read_connect)
             cls._bundles[db_name] = db_manager
