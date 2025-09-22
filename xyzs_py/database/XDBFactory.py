@@ -80,7 +80,7 @@ class XDBFactory:
         with cls._lock:
             if not db_name and db_name == "":
                 db_name = cls.__MAIN_DB_KEY
-                
+
             need_register = db_name not in cls._bundles
             listener = None
             if need_register:
