@@ -8,3 +8,4 @@ from .XConfig import XConfig
 from .XHTTPClient import XHTTPClient
 from .XLogs import XLogs
 from .JsonUtil import JsonUtil
+from .ConfigManager import ConfigManager
