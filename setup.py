@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="xyzs_py",  # 包名，建议与项目文件夹名称一致
-    version="1.1.0",  # 版本号，遵循语义化版本控制
+    version="1.1.1",  # 版本号，遵循语义化版本控制
     author="Jed",  # 作者
     author_email="jiede2011@hotmail.com",  # 作者邮箱
     description="封装Mysql、Redis、时间操作类、yaml配置操作、Http操作、日志操作等等快速使用的代码",  # 包的简要描述

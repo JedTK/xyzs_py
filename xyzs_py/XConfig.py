@@ -1,3 +1,5 @@
+from typing import Any, Optional, Dict, List
+
 import yaml
 import os
 from xyzs_py.XLogs import XLogs
@@ -80,20 +82,74 @@ class XConfig:
             return value.lower() in ['true', '1', 'yes']
         return bool(value)
 
-    def get_list(self, key, default=None):
+    def get_list(self, key: str, default: Optional[List[Any]] = None) -> Optional[List[Any]]:
+        """
+        获取 list 配置。
+
+        支持：
+        - 原生 list（YAML 中直接写 - a / [a,b]）
+        - 字符串形式的 YAML/JSON list（如 "[1,2]" / "['a','b']" / "- a\\n- b"）
+        - 可选：逗号分隔字符串 "a,b,c" -> ["a","b","c"]
+        """
         value = self.get(key, default)
+
+        # 1) 原生 list 直接返回
         if isinstance(value, list):
             return value
-        try:
-            return eval(value) if isinstance(value, str) else default
-        except Exception:
-            return default
 
-    def get_dict(self, key, default=None):
+        # 2) tuple 等可迭代容器（可选支持）
+        if isinstance(value, tuple):
+            return list(value)
+
+        # 3) 字符串：尝试安全解析成 list
+        if isinstance(value, str):
+            parsed = self._safe_parse_container_str(value)
+            if isinstance(parsed, list):
+                return parsed
+
+            # 4) 兜底：支持 "a,b,c" 这种写法（你不需要可删）
+            if "," in value:
+                parts = [p.strip() for p in value.split(",") if p.strip()]
+                return parts if parts else default
+
+        return default
+
+    def get_dict(self, key: str, default: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+        """
+        获取 dict 配置。
+
+        支持：
+        - 原生 dict（YAML 中直接写 key: value 或 {a:1}）
+        - 字符串形式的 YAML/JSON dict（如 "{a: 1}" / '{"a":1}' / "a: 1\\nb: 2"）
+        """
         value = self.get(key, default)
+
+        # 1) 原生 dict 直接返回
         if isinstance(value, dict):
             return value
+
+        # 2) 字符串：尝试安全解析成 dict
+        if isinstance(value, str):
+            parsed = self._safe_parse_container_str(value)
+            if isinstance(parsed, dict):
+                return parsed
+
+        return default
+
+    def _safe_parse_container_str(self, s: str) -> Any:
+        """
+        安全解析“可能是容器（list/dict）”的字符串。
+
+        解析策略：
+        - 使用 yaml.safe_load：可解析 YAML/JSON 子集（比 json.loads 更宽容）
+        - 解析失败返回 None
+        """
+        if not isinstance(s, str):
+            return None
+        s = s.strip()
+        if not s:
+            return None
         try:
-            return eval(value) if isinstance(value, str) else default
+            return yaml.safe_load(s)
         except Exception:
-            return default
+            return None
