@@ -1,4 +1,7 @@
 import json
+from datetime import datetime, date
+from decimal import Decimal
+from enum import Enum
 from typing import Any
 
 import msgpack
@@ -54,13 +57,67 @@ class XCache:
                 return False  # 初始化失败
         return True  # 已经初始化
 
+    # def serialize(self, value: Any) -> bytes:
+    #     # 如果是 SQLAlchemy 模型对象，转换为字典
+    #     if hasattr(value, '__dict__'):
+    #         # 过滤掉 SQLAlchemy 内部属性（如 '_sa_instance_state'）
+    #         value_dict = {k: v for k, v in value.__dict__.items() if not k.startswith('_')}
+    #         return msgpack.packb(value_dict)
+    #     return msgpack.packb(value)
+
+    def _to_cache_data(self, value: Any) -> Any:
+        """
+        将任意对象递归转换为 msgpack 可序列化的数据。
+        """
+
+        if value is None:
+            return None
+
+        if isinstance(value, (str, int, float, bool, bytes)):
+            return value
+
+        if isinstance(value, Decimal):
+            return str(value)
+
+        if isinstance(value, datetime):
+            return value.isoformat()
+
+        if isinstance(value, date):
+            return value.isoformat()
+
+        if isinstance(value, Enum):
+            return value.value
+
+        if isinstance(value, dict):
+            return {
+                str(k): self._to_cache_data(v)
+                for k, v in value.items()
+            }
+
+        if isinstance(value, (list, tuple, set)):
+            return [
+                self._to_cache_data(item)
+                for item in value
+            ]
+
+        if hasattr(value, "model_dump"):
+            return self._to_cache_data(value.model_dump())
+
+        if hasattr(value, "dict") and callable(value.dict):
+            return self._to_cache_data(value.dict())
+
+        if hasattr(value, "__dict__"):
+            return {
+                k: self._to_cache_data(v)
+                for k, v in value.__dict__.items()
+                if not k.startswith("_")
+            }
+
+        raise TypeError(f"无法缓存该对象类型: {type(value).__name__}")
+
     def serialize(self, value: Any) -> bytes:
-        # 如果是 SQLAlchemy 模型对象，转换为字典
-        if hasattr(value, '__dict__'):
-            # 过滤掉 SQLAlchemy 内部属性（如 '_sa_instance_state'）
-            value_dict = {k: v for k, v in value.__dict__.items() if not k.startswith('_')}
-            return msgpack.packb(value_dict)
-        return msgpack.packb(value)
+        cache_data = self._to_cache_data(value)
+        return msgpack.packb(cache_data, use_bin_type=True)
 
     def deserialize(self, value: bytes) -> Any:
         return msgpack.unpackb(value, raw=False)
