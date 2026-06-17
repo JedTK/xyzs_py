@@ -51,10 +51,10 @@ class XCacheFactory:
             if name == "default":
                 # 创建缓存工厂实例
                 return XCacheFactory.create(host=os.getenv("redis.host", "127.0.0.1"),
-                                            port=os.getenv("redis.port", 6379),
+                                            port=int(os.getenv("redis.port", 6379)),
                                             username=os.getenv("redis.username", ""),
                                             password=os.getenv("redis.password", ""),
-                                            db=os.getenv("redis.db", 0))
+                                            db=int(os.getenv("redis.db", 0)))
             else:
                 logger.error(f"XCache实例 '{name}' 不存在，请先调用create方法创建")
                 raise ValueError(f"XCache实例 '{name}' 不存在")
