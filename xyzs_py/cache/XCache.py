@@ -2,7 +2,7 @@ import json
 from datetime import datetime, date
 from decimal import Decimal
 from enum import Enum
-from typing import Any
+from typing import Any, get_origin, get_args
 
 import msgpack
 import redis
@@ -65,56 +65,6 @@ class XCache:
     #         return msgpack.packb(value_dict)
     #     return msgpack.packb(value)
 
-    def _to_cache_data(self, value: Any) -> Any:
-        """
-        将任意对象递归转换为 msgpack 可序列化的数据。
-        """
-
-        if value is None:
-            return None
-
-        if isinstance(value, (str, int, float, bool, bytes)):
-            return value
-
-        if isinstance(value, Decimal):
-            return str(value)
-
-        if isinstance(value, datetime):
-            return value.isoformat()
-
-        if isinstance(value, date):
-            return value.isoformat()
-
-        if isinstance(value, Enum):
-            return value.value
-
-        if isinstance(value, dict):
-            return {
-                str(k): self._to_cache_data(v)
-                for k, v in value.items()
-            }
-
-        if isinstance(value, (list, tuple, set)):
-            return [
-                self._to_cache_data(item)
-                for item in value
-            ]
-
-        if hasattr(value, "model_dump"):
-            return self._to_cache_data(value.model_dump())
-
-        if hasattr(value, "dict") and callable(value.dict):
-            return self._to_cache_data(value.dict())
-
-        if hasattr(value, "__dict__"):
-            return {
-                k: self._to_cache_data(v)
-                for k, v in value.__dict__.items()
-                if not k.startswith("_")
-            }
-
-        raise TypeError(f"无法缓存该对象类型: {type(value).__name__}")
-
     def serialize(self, value: Any) -> bytes:
         cache_data = self._to_cache_data(value)
         return msgpack.packb(cache_data, use_bin_type=True)
@@ -148,10 +98,15 @@ class XCache:
     def get(self, key, default=None, cls=None):
         """
         获取缓存值。
+
         :param key: 缓存键
         :param default: 默认值
-        :param cls: 可选的类，用于将字典反序列化为对象实例
-        :return: 缓存值，或default如果键不存在或发生错误
+        :param cls: 可选类型。
+                    支持：
+                    - SomeClass
+                    - list[SomeClass]
+                    - List[SomeClass]
+        :return: 缓存值，或 default
         """
         try:
             if not self._init_client():
@@ -162,12 +117,31 @@ class XCache:
             if value is None:
                 return default
 
-            # 反序列化
             deserialized_value = self.deserialize(value)
 
-            # 如果指定了 cls，则将字典转为对象
-            if cls and isinstance(deserialized_value, dict):
-                return cls(**deserialized_value)
+            if cls is None:
+                return deserialized_value
+
+            # 处理 list[T] / List[T]
+            if self._is_list_type(cls):
+                item_cls = self._get_list_item_type(cls)
+
+                if item_cls is None:
+                    return deserialized_value
+
+                if not isinstance(deserialized_value, list):
+                    return default
+
+                return [
+                    self._dict_to_obj(item_cls, item)
+                    if isinstance(item, dict)
+                    else item
+                    for item in deserialized_value
+                ]
+
+            # 处理普通对象 T
+            if isinstance(deserialized_value, dict):
+                return self._dict_to_obj(cls, deserialized_value)
 
             return deserialized_value
 
@@ -291,3 +265,93 @@ class XCache:
             except json.JSONDecodeError:
                 return default
         return value if isinstance(value, dict) else default
+
+    def _to_cache_data(self, value: Any) -> Any:
+        """
+        将任意对象递归转换为 msgpack 可序列化的数据。
+        """
+
+        if value is None:
+            return None
+
+        if isinstance(value, (str, int, float, bool, bytes)):
+            return value
+
+        if isinstance(value, Decimal):
+            return str(value)
+
+        if isinstance(value, datetime):
+            return value.isoformat()
+
+        if isinstance(value, date):
+            return value.isoformat()
+
+        if isinstance(value, Enum):
+            return value.value
+
+        if isinstance(value, dict):
+            return {
+                str(k): self._to_cache_data(v)
+                for k, v in value.items()
+            }
+
+        if isinstance(value, (list, tuple, set)):
+            return [
+                self._to_cache_data(item)
+                for item in value
+            ]
+
+        if hasattr(value, "model_dump"):
+            return self._to_cache_data(value.model_dump())
+
+        if hasattr(value, "dict") and callable(value.dict):
+            return self._to_cache_data(value.dict())
+
+        if hasattr(value, "__dict__"):
+            return {
+                k: self._to_cache_data(v)
+                for k, v in value.__dict__.items()
+                if not k.startswith("_")
+            }
+
+        raise TypeError(f"无法缓存该对象类型: {type(value).__name__}")
+
+    def _dict_to_obj(self, cls: type, data: dict):
+
+        """
+
+        将 dict 转成指定对象。
+
+        """
+
+        if hasattr(cls, "model_validate"):
+            return cls.model_validate(data)
+
+        return cls(**data)
+
+    def _is_list_type(self, cls: Any) -> bool:
+
+        """
+
+        判断 cls 是否是 list[T] 或 List[T]。
+
+        """
+
+        origin = get_origin(cls)
+
+        return origin is list
+
+    def _get_list_item_type(self, cls: Any):
+
+        """
+
+        获取 list[T] 中的 T。
+
+        """
+
+        args = get_args(cls)
+
+        if not args:
+            return None
+
+        return args[0]
