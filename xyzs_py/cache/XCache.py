@@ -274,11 +274,11 @@ class XCache:
         if value is None:
             return None
 
-        if isinstance(value, (str, int, float, bool, bytes)):
+        if isinstance(value, (str, int, float, bool, bytes,Decimal)):
             return value
 
-        if isinstance(value, Decimal):
-            return str(value)
+        # if isinstance(value, Decimal):
+        #     return str(value)
 
         if isinstance(value, datetime):
             return value.isoformat()
